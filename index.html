@@ -4,39 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script> <!-- QR decoding library -->
 </head>
 <body>
-    <h2>Scan QR Code</h2>
-    <div id="reader" style="width: 100%; height: 400px;"></div>
+    <h2>Scan QR Code Using Your Camera</h2>
+    
+    <!-- Video element to display the camera feed -->
+    <video id="video" width="100%" height="auto" style="border: 1px solid black"></video>
+
+    <!-- Display scanned data -->
     <p><strong>Scanned Data:</strong> <span id="result"></span></p>
     <button onclick="submitData()">Submit</button>
 
     <script>
-        let scannedData = "";
+        let scannedData = ""; // Store scanned data
 
-        // Function to handle the success of QR code scanning
-        function onScanSuccess(qrCodeMessage) {
-            // Display scanned QR code data
-            document.getElementById('result').innerText = qrCodeMessage;
-            scannedData = qrCodeMessage; // Store scanned data
+        // Function to access the camera and start scanning
+        function startScanner() {
+            // Access the user's camera
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(stream) {
+                    // Display the camera feed in the video element
+                    document.getElementById('video').srcObject = stream;
+                    // Start scanning
+                    scanQRCode(stream);
+                })
+                .catch(function(error) {
+                    alert('Error accessing camera: ' + error);
+                });
         }
 
-        // Function to submit the scanned QR code data to Google Sheets
+        // Function to scan QR code from the camera feed
+        function scanQRCode(stream) {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            // Continuously scan for QR codes
+            function processFrame() {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+
+                // Draw the current video frame onto the canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Try to decode the QR code from the canvas image
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                // If a QR code is found, display it and stop the stream
+                if (code) {
+                    scannedData = code.data;
+                    document.getElementById('result').innerText = scannedData;
+                    stream.getTracks().forEach(track => track.stop()); // Stop the camera after scanning
+                } else {
+                    // Keep scanning if no QR code is found
+                    requestAnimationFrame(processFrame);
+                }
+            }
+
+            processFrame(); // Start scanning
+        }
+
+        // Function to submit scanned data to Google Sheets
         function submitData() {
             if (scannedData) {
-                // Send data to the Apps Script Web App (replace YOUR_GOOGLE_SCRIPT_URL)
+                // Replace 'YOUR_GOOGLE_SCRIPT_URL' with your Google Apps Script Web App URL
                 fetch('https://script.google.com/macros/s/AKfycbyTPiSqsMoSJbqA6Lk7sxMTqAt_CdzK61crTt_3QaGT1UM9zKU2F-lK7YTrPfItmyyL/exec?data=' + encodeURIComponent(scannedData))
                     .then(response => response.text())
-                    .then(data => alert(data))  // Show success message
-                    .catch(error => alert('Error saving data!'));  // Handle error
+                    .then(data => alert('Data submitted successfully!'))
+                    .catch(error => alert('Error saving data!'));
             } else {
-                alert("No QR code scanned!");  // Prompt if no QR code was scanned
+                alert("No QR code scanned!"); // Prompt if no QR code was scanned
             }
         }
 
-        // Initialize the QR code scanner
-        new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }).render(onScanSuccess);
+        // Start scanning when the page loads
+        window.onload = startScanner;
     </script>
 </body>
 </html>
