@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script> <!-- QR decoding library -->
+    <style>
+        /* Simple styling to make the video feed fit the screen */
+        video {
+            width: 100%;
+            height: auto;
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
     <h2>Scan QR Code Using Your Camera</h2>
@@ -25,7 +33,9 @@
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 .then(function(stream) {
                     // Display the camera feed in the video element
-                    document.getElementById('video').srcObject = stream;
+                    const videoElement = document.getElementById('video');
+                    videoElement.srcObject = stream;
+                    videoElement.play();
                     // Start scanning
                     scanQRCode(stream);
                 })
