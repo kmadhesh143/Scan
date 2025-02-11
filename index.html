@@ -29,7 +29,7 @@
             color: white;
             border: none;
             cursor: pointer;
-            margin-top: 10px;
+            margin: 10px 5px;
             border-radius: 5px;
         }
         button:hover {
@@ -64,11 +64,13 @@
     <button onclick="startScanner()">Start Scanner</button>
     <button onclick="addToTable()">Add to Table</button>
     <button onclick="clearTable()">Clear Table</button>
+    <button onclick="copyAll()">Copy All</button>
 
     <h3>Scanned QR Codes</h3>
     <table id="qrTable">
         <thead>
             <tr>
+                <th>S.No</th>
                 <th>QR Code Data</th>
                 <th>Timestamp</th>
                 <th>Copy</th>
@@ -130,10 +132,12 @@
 
             scannedData.forEach((data, index) => {
                 const row = table.insertRow();
-                const cell1 = row.insertCell(0);
-                const cell2 = row.insertCell(1);
-                const cell3 = row.insertCell(2);
+                const cell0 = row.insertCell(0);
+                const cell1 = row.insertCell(1);
+                const cell2 = row.insertCell(2);
+                const cell3 = row.insertCell(3);
 
+                cell0.innerHTML = index + 1;
                 cell1.innerHTML = data.qrData;
                 cell2.innerHTML = data.timestamp;
                 
@@ -151,6 +155,20 @@
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
                 alert("Copied to clipboard: " + text);
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
+        }
+
+        function copyAll() {
+            if (scannedData.length === 0) {
+                alert("No data to copy!");
+                return;
+            }
+
+            let allData = scannedData.map((data, index) => `${index + 1}. ${data.qrData} - ${data.timestamp}`).join("\n");
+            navigator.clipboard.writeText(allData).then(() => {
+                alert("All QR codes copied!");
             }).catch(err => {
                 console.error("Failed to copy: ", err);
             });
