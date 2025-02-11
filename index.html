@@ -30,6 +30,7 @@
             border: none;
             cursor: pointer;
             margin-top: 10px;
+            border-radius: 5px;
         }
         button:hover {
             background: darkgreen;
@@ -46,6 +47,12 @@
         }
         th {
             background-color: #f2f2f2;
+        }
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -64,6 +71,7 @@
             <tr>
                 <th>QR Code Data</th>
                 <th>Timestamp</th>
+                <th>Copy</th>
             </tr>
         </thead>
         <tbody>
@@ -72,18 +80,18 @@
     </table>
 
     <script>
-        let scannedData = JSON.parse(localStorage.getItem('scannedData')) || []; // Load data from localStorage if available
-        let currentScan = ''; // To hold the current scanned QR code
+        let scannedData = JSON.parse(localStorage.getItem('scannedData')) || [];
+        let currentScan = '';
 
         function startScanner() {
             const scanner = new Html5Qrcode("reader");
 
             scanner.start(
-                { facingMode: "environment" }, // Use rear camera
+                { facingMode: "environment" }, 
                 { fps: 10, qrbox: 250 },
                 (qrCodeMessage) => {
                     document.getElementById("qrData").value = qrCodeMessage;
-                    currentScan = qrCodeMessage; // Save the scanned QR code temporarily
+                    currentScan = qrCodeMessage;
                 },
                 (errorMessage) => {
                     console.log("Scanner error: ", errorMessage);
@@ -97,52 +105,63 @@
                 return;
             }
 
-            // Check if the QR code is unique
             if (isDuplicate(currentScan)) {
                 alert("This QR code has already been scanned!");
                 return;
             }
 
-            // Add the QR code data and timestamp to the array
             scannedData.push({ qrData: currentScan, timestamp: new Date().toLocaleString() });
 
-            // Update the localStorage
             localStorage.setItem('scannedData', JSON.stringify(scannedData));
 
-            // Update the table
             updateTable();
 
-            // Reset the input field and scanner
             document.getElementById("qrData").value = '';
             currentScan = '';
         }
 
         function isDuplicate(qrData) {
-            // Check if the scanned QR data is already in the scannedData array
             return scannedData.some(data => data.qrData === qrData);
         }
 
         function updateTable() {
             const table = document.getElementById("qrTable").getElementsByTagName("tbody")[0];
-            table.innerHTML = ''; // Clear existing rows before adding new ones
+            table.innerHTML = '';
 
-            // Add each scanned data to the table
-            scannedData.forEach((data) => {
+            scannedData.forEach((data, index) => {
                 const row = table.insertRow();
                 const cell1 = row.insertCell(0);
                 const cell2 = row.insertCell(1);
+                const cell3 = row.insertCell(2);
+
                 cell1.innerHTML = data.qrData;
                 cell2.innerHTML = data.timestamp;
+                
+                const copyButton = document.createElement("button");
+                copyButton.innerHTML = "📋";
+                copyButton.classList.add("copy-btn");
+                copyButton.onclick = function () {
+                    copyToClipboard(data.qrData);
+                };
+
+                cell3.appendChild(copyButton);
+            });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied to clipboard: " + text);
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
             });
         }
 
         function clearTable() {
-            scannedData = []; // Clear the data array
-            localStorage.removeItem('scannedData'); // Remove the data from localStorage
-            updateTable(); // Re-render the table
+            scannedData = [];
+            localStorage.removeItem('scannedData');
+            updateTable();
         }
 
-        // Initial render of the table
         updateTable();
     </script>
 
