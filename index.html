@@ -54,6 +54,8 @@
     <h2>Scan QR Code</h2>
     <div id="reader"></div>
     <input type="text" id="qrData" placeholder="Scanned QR Code" readonly>
+    <button onclick="startScanner()">Start Scanner</button>
+    <button onclick="addToTable()">Add to Table</button>
     <button onclick="clearTable()">Clear Table</button>
 
     <h3>Scanned QR Codes</h3>
@@ -70,7 +72,8 @@
     </table>
 
     <script>
-        let scannedData = []; // To hold all scanned QR codes
+        let scannedData = JSON.parse(localStorage.getItem('scannedData')) || []; // Load data from localStorage if available
+        let currentScan = ''; // To hold the current scanned QR code
 
         function startScanner() {
             const scanner = new Html5Qrcode("reader");
@@ -80,32 +83,7 @@
                 { fps: 10, qrbox: 250 },
                 (qrCodeMessage) => {
                     document.getElementById("qrData").value = qrCodeMessage;
-
-                    // Check if the QR code is unique before adding
-                    if (!isDuplicate(qrCodeMessage)) {
-                        addToTable(qrCodeMessage);
-                    } else {
-                        alert("This QR code has already been scanned!");
-                    }
-
-                    // Restart the scanner immediately after each scan
-                    scanner.clear(); // Clear previous scanner session
-                    scanner.start(
-                        { facingMode: "environment" }, // Use rear camera again
-                        { fps: 10, qrbox: 250 },
-                        (qrCodeMessage) => {
-                            document.getElementById("qrData").value = qrCodeMessage;
-
-                            if (!isDuplicate(qrCodeMessage)) {
-                                addToTable(qrCodeMessage);
-                            } else {
-                                alert("This QR code has already been scanned!");
-                            }
-                        },
-                        (errorMessage) => {
-                            console.log("QR code scan error: ", errorMessage);
-                        }
-                    ).catch(err => console.log("Scanner error: ", err));
+                    currentScan = qrCodeMessage; // Save the scanned QR code temporarily
                 },
                 (errorMessage) => {
                     console.log("Scanner error: ", errorMessage);
@@ -113,22 +91,35 @@
             ).catch(err => console.log("Scanner error: ", err));
         }
 
-        function isDuplicate(qrData) {
-            // Check if the scanned QR data is already in the scannedData array
-            return scannedData.some(data => data.qrData === qrData);
-        }
-
-        function addToTable(qrData) {
-            if (!qrData) {
-                alert("No QR Code scanned!");
+        function addToTable() {
+            if (!currentScan) {
+                alert("Please scan a QR code first!");
                 return;
             }
 
-            // Add new data to the array
-            scannedData.push({ qrData: qrData, timestamp: new Date().toLocaleString() });
+            // Check if the QR code is unique
+            if (isDuplicate(currentScan)) {
+                alert("This QR code has already been scanned!");
+                return;
+            }
+
+            // Add the QR code data and timestamp to the array
+            scannedData.push({ qrData: currentScan, timestamp: new Date().toLocaleString() });
+
+            // Update the localStorage
+            localStorage.setItem('scannedData', JSON.stringify(scannedData));
 
             // Update the table
             updateTable();
+
+            // Reset the input field and scanner
+            document.getElementById("qrData").value = '';
+            currentScan = '';
+        }
+
+        function isDuplicate(qrData) {
+            // Check if the scanned QR data is already in the scannedData array
+            return scannedData.some(data => data.qrData === qrData);
         }
 
         function updateTable() {
@@ -147,10 +138,12 @@
 
         function clearTable() {
             scannedData = []; // Clear the data array
+            localStorage.removeItem('scannedData'); // Remove the data from localStorage
             updateTable(); // Re-render the table
         }
 
-        startScanner(); // Start the scanner on page load
+        // Initial render of the table
+        updateTable();
     </script>
 
 </body>
