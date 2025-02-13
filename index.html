@@ -112,7 +112,23 @@
                 return;
             }
 
-            scannedData.push({ qrData: currentScan, timestamp: new Date().toLocaleString() });
+            const timestamp = new Date().toLocaleString();
+
+            // Send data to Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbx8OVaPxUVkq0Gm9fVZiEdJGgjHDghgap_rL9DHJCJEWUJ1IGPOMxLXlTal-_zzdPNytg/exec', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    'qrData': currentScan,
+                    'timestamp': timestamp
+                })
+            }).then(response => response.text())
+              .then(result => console.log(result))
+              .catch(error => console.error('Error:', error));
+
+            scannedData.push({ qrData: currentScan, timestamp: timestamp });
 
             localStorage.setItem('scannedData', JSON.stringify(scannedData));
 
