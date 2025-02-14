@@ -15,7 +15,7 @@
             width: 300px;
             margin: auto;
         }
-        input {
+        input, select {
             width: 80%;
             padding: 10px;
             margin: 10px;
@@ -62,12 +62,14 @@
     <div id="reader"></div>
     <input type="text" id="qrData" placeholder="Scanned QR Code" readonly>
 
-    <!-- Dropdown for category selection -->
+    <label for="category">Select Category:</label>
     <select id="category">
-        <option value="refreshment">Refreshment</option>
-        <option value="lunch">Lunch</option>
-        <option value="dinner">Dinner</option>
-        <option value="breakfast">Breakfast</option>
+        <option value="IN">In</option>
+        <option value="Refreshment">Refreshment</option>
+        <option value="Breakfast">Breakfast</option>
+        <option value="Lunch">Lunch</option>
+        <option value="Dinner">Dinner</option>
+        <option value="Out">Out</option>
     </select>
 
     <button onclick="startScanner()">Start Scanner</button>
@@ -123,18 +125,16 @@
             }
 
             const timestamp = new Date().toLocaleString();
-            const category = document.getElementById("category").value; // Get category
+            const category = document.getElementById("category").value;
 
             // Send data to Google Apps Script
-            fetch('https://script.google.com/macros/s/AKfycbzzMfiXG3W2OYwcaOoP6b9CHUb32rrV0qvpIpEJKhyY_QpGqwXJ4Rab4ZFs2r6gykM88A/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbxgerPAcIUWze62eGC3a7lcVp8AmYmo05trll02o_KqV7w-vP_bRpVtQCIxP17ligF0/exec', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     'qrData': currentScan,
                     'timestamp': timestamp,
-                    'category': category  // Send category with data
+                    'category': category
                 })
             }).then(response => response.text())
               .then(result => console.log(result))
@@ -145,7 +145,6 @@
             localStorage.setItem('scannedData', JSON.stringify(scannedData));
 
             updateTable();
-
             document.getElementById("qrData").value = '';
             currentScan = '';
         }
@@ -196,24 +195,21 @@
                 return;
             }
 
-            let allData = scannedData.map(data => `QR Data: ${data.qrData}, Timestamp: ${data.timestamp}, Category: ${data.category}`).join('\n');
-
+            let allData = scannedData.map((data, index) => `${index + 1}. ${data.qrData} - ${data.timestamp} - ${data.category}`).join("\n");
             navigator.clipboard.writeText(allData).then(() => {
-                alert("All data copied to clipboard.");
+                alert("All QR codes copied!");
             }).catch(err => {
-                console.error("Failed to copy all data: ", err);
+                console.error("Failed to copy: ", err);
             });
         }
 
         function clearTable() {
-            if (confirm("Are you sure you want to clear the table? This will also clear local storage.")) {
-                scannedData = [];
-                localStorage.removeItem('scannedData');
-                updateTable();
-            }
+            scannedData = [];
+            localStorage.removeItem('scannedData');
+            updateTable();
         }
 
-        window.onload = updateTable;
+        updateTable();
     </script>
 
 </body>
