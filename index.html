@@ -61,6 +61,15 @@
     <h2>Scan QR Code</h2>
     <div id="reader"></div>
     <input type="text" id="qrData" placeholder="Scanned QR Code" readonly>
+
+    <!-- Dropdown for category selection -->
+    <select id="category">
+        <option value="refreshment">Refreshment</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+        <option value="breakfast">Breakfast</option>
+    </select>
+
     <button onclick="startScanner()">Start Scanner</button>
     <button onclick="addToTable()">Add to Table</button>
     <button onclick="clearTable()">Clear Table</button>
@@ -73,6 +82,7 @@
                 <th>S.No</th>
                 <th>QR Code Data</th>
                 <th>Timestamp</th>
+                <th>Category</th>
                 <th>Copy</th>
             </tr>
         </thead>
@@ -113,22 +123,24 @@
             }
 
             const timestamp = new Date().toLocaleString();
+            const category = document.getElementById("category").value; // Get category
 
             // Send data to Google Apps Script
-            fetch('https://script.google.com/macros/s/AKfycbx8OVaPxUVkq0Gm9fVZiEdJGgjHDghgap_rL9DHJCJEWUJ1IGPOMxLXlTal-_zzdPNytg/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbzBTklVyYP3NiFHUdYHfxmyztF-LqA9ATSuAjUSoW2vbvZsB9ZLwIgKVoDHdv9CjSk1zA/exec', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: new URLSearchParams({
                     'qrData': currentScan,
-                    'timestamp': timestamp
+                    'timestamp': timestamp,
+                    'category': category  // Send category with data
                 })
             }).then(response => response.text())
               .then(result => console.log(result))
               .catch(error => console.error('Error:', error));
 
-            scannedData.push({ qrData: currentScan, timestamp: timestamp });
+            scannedData.push({ qrData: currentScan, timestamp: timestamp, category: category });
 
             localStorage.setItem('scannedData', JSON.stringify(scannedData));
 
@@ -152,11 +164,13 @@
                 const cell1 = row.insertCell(1);
                 const cell2 = row.insertCell(2);
                 const cell3 = row.insertCell(3);
+                const cell4 = row.insertCell(4);
 
                 cell0.innerHTML = index + 1;
                 cell1.innerHTML = data.qrData;
                 cell2.innerHTML = data.timestamp;
-                
+                cell3.innerHTML = data.category;
+
                 const copyButton = document.createElement("button");
                 copyButton.innerHTML = "📋";
                 copyButton.classList.add("copy-btn");
@@ -164,7 +178,7 @@
                     copyToClipboard(data.qrData);
                 };
 
-                cell3.appendChild(copyButton);
+                cell4.appendChild(copyButton);
             });
         }
 
@@ -182,21 +196,24 @@
                 return;
             }
 
-            let allData = scannedData.map((data, index) => `${index + 1}. ${data.qrData} - ${data.timestamp}`).join("\n");
+            let allData = scannedData.map(data => `QR Data: ${data.qrData}, Timestamp: ${data.timestamp}, Category: ${data.category}`).join('\n');
+
             navigator.clipboard.writeText(allData).then(() => {
-                alert("All QR codes copied!");
+                alert("All data copied to clipboard.");
             }).catch(err => {
-                console.error("Failed to copy: ", err);
+                console.error("Failed to copy all data: ", err);
             });
         }
 
         function clearTable() {
-            scannedData = [];
-            localStorage.removeItem('scannedData');
-            updateTable();
+            if (confirm("Are you sure you want to clear the table? This will also clear local storage.")) {
+                scannedData = [];
+                localStorage.removeItem('scannedData');
+                updateTable();
+            }
         }
 
-        updateTable();
+        window.onload = updateTable;
     </script>
 
 </body>
